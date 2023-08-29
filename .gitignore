@@ -1,1 +1,5 @@
+# 忽略任意路径下的 node_modules
 **/node_modules/*
+
+# 忽略任意路径下的 pnpm-lock.yaml 文件
+**/pnpm-lock.yaml

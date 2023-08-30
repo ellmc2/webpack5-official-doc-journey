@@ -189,7 +189,7 @@ class HelloAsyncPlugin {
 module.exports = HelloAsyncPlugin;
 ```
 
-#### 示例
+## 示例
 
 写一个简单的示例插件，生成一个叫做 `assets.md` 的新文件；文件内容是所有构建生成的文件的列表。这个插件大概像下面这样：
 
@@ -286,6 +286,78 @@ module.exports = {
   ],
 };
 ```
+
+## 插件的不同类型
+
+webpack 插件可以按照它所注册的事件分成不同的类型。每一个事件钩子都预先定义为同步、异步、瀑布或并行钩子，钩子在内部用 call/callAsync 方法调用。支持的钩子清单或可被绑定的钩子清单，通常在 `this.hooks` 属性指定。
+
+例如:
+
+```javascript
+this.hooks = {
+  shouldEmit: new SyncBailHook(['compilation']),
+};
+```
+
+表示唯一支持的钩子是 `shouldEmit` ，这是一个 `SyncBailHook` 类型的钩子，传入插件的唯一参数是 `compilation` 。
+
+支持的各类型钩子
+
+### Synchronous(同步) Hooks
+
+- **SyncHook**
+
+  - 通过 `new SyncHook([params])` 定义。
+  - 用 `tap` 方法绑定。
+  - 用 `call(...params)` 方法调用。
+
+- **Bail(保险) Hooks**
+
+  - 通过 `new SyncBailHook([params])` 定义。
+  - 用 `tap` 方法绑定。
+  - 用 `call(...params)` 方法调用。
+
+  Bail类型的钩子，其插件回调函数是串行调用，任意一个插件回调函数返回非 undefined 值，则停止执行插件，该值作为钩子的返回值。`optimizeChunks`，`optimizeChunkModules` 等很有用的事件都是 SyncBailHooks 。
+
+- **Waterfall(瀑布) Hooks**
+
+  - 通过 `new SyncWaterfallHook([params])` 定义。
+  - 用 `tap` 方法绑定。
+  - 用 `call(...params)` 方法调用。
+
+  该类型的插件是一个接一个串行执行，前一个的返回值作为后一个的入参。插件需要考虑执行的顺序，因为后一个插件必须接受前一个插件执行的结果作为入参。第一个插件的参数为 `init` 。 所以 waterfall 钩子至少要制定一个参数。这种模式用于和 `ModuleTemplate`，`ChunkTemplate` 等 webpack 模板相关的 Tapable 实例。
+
+### Asynchronous(异步) Hooks
+
+- **Async Series(异步串联) Hook**
+
+  - 通过 `new AsyncSeriesHook([params])` 定义。
+  - 用 `tap`/`tapAsync`/`tapPromise` 方法绑定。
+  - 用 `callAsync(...params)` 方法调用。
+
+  插件处理函数(handler functions)的参数为所有参数，以及一个签名为 `(err?: Error) -> void` 的 callback 函数，callback 函数的处理函数按注册顺序执行。`callback` 在所有处理函数执行完后调用。 这是 `emit` 和 `run` 事件的常见使用模式。
+
+- **Async waterfall(异步瀑布)** 插件会用 waterfall 方式异步应用
+
+  - 通过 `new AsyncWaterfallHook([params])` 定义。
+  - 用 `tap`/`tapAsync`/`tapPromise` 方法绑定。
+  - 用 `callAsync(...params)` 方法调用。
+
+  插件处理函数的参数为当前值，以及一个签名为 `(err: Error, nextValue: any) -> void` 的 callback 函数。调用时 `nextValue` 是下一个处理函数的当前值。第一个处理函数的当前是只 `init` 。当所有 handler 都执行后，callback执行，参数为最后一个值。任一个 handler 传入 `err` 值，停止调用 handler 且 callback 被调用。 这种模式在 `before-resolve` 和 `after-resolve` 事件中常见。
+
+- **Async Series Bail**
+
+  - 通过 `new AsyncSeriesBailHook([params])` 定义。
+  - 用 `tap`/`tapAsync`/`tapPromise` 方法绑定。
+  - 用 `callAsync(...params)` 方法调用。
+
+- **Async Parallel**
+
+  - 通过 `new AsyncParallelHook([params])` 定义。
+  - 用 `tap`/`tapAsync`/`tapPromise` 方法绑定。
+  - 用 `callAsync(...params)` 方法调用。
+
+
 
 ## 思考与疑惑
 

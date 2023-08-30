@@ -4,6 +4,8 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 const MyExampleWebpackPlugin = require('./my-example-plugin');
 const HelloWorldPlugin = require('./hello-world-plugin');
+const { FileListPlugin } = require('./file-list-plugin.js');
+
 
 const isProduction = process.env.NODE_ENV == 'production';
 
@@ -27,7 +29,11 @@ const config = {
         }),
         // new MyExampleWebpackPlugin(),
 
-        new HelloWorldPlugin({ options: false })
+        // new HelloWorldPlugin({ options: false })
+
+        // 添加插件，使用默认选项
+        new FileListPlugin(),
+
         // Add your plugins here
         // Learn more about plugins from https://webpack.js.org/configuration/plugins/
     ],
